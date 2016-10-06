@@ -84,9 +84,10 @@ FriendlyChat.prototype.saveMessage = function(e) {
   // Check that the user entered a message and is signed in.
   if (this.messageInput.value && this.checkSignedInWithMessage()) {
     var currentUser = this.auth.currentUser;
+	console.log(currentUser);
     // Add a new message entry to the Firebase Database.
     this.messagesRef.push({
-      name: currentUser.displayName,
+      name: currentUser.email, //name: currentUser.displayName,
       text: this.messageInput.value,
       photoUrl: currentUser.photoURL || '/images/profile_placeholder.png'
     }).then(function() {
@@ -98,7 +99,6 @@ FriendlyChat.prototype.saveMessage = function(e) {
     });
   }
 };
-
 // Sets the URL of the given img element with the URL of the image stored in Firebase Storage.
 FriendlyChat.prototype.setImageUrl = function(imageUri, imgElement) {
   // If the image is a Firebase Storage URI we fetch the URL.
@@ -129,17 +129,18 @@ FriendlyChat.prototype.saveImageMessage = function(event) {
     this.signInSnackbar.MaterialSnackbar.showSnackbar(data);
     return;
   }
-
   // Check if the user is signed-in
   if (this.checkSignedInWithMessage()) {
 
     // We add a message with a loading icon that will get updated with the shared image.
     var currentUser = this.auth.currentUser;
+	
     this.messagesRef.push({
-      name: currentUser.displayName,
+      name: currentUser.email, //name: currentUser.displayName,
       imageUrl: FriendlyChat.LOADING_IMAGE_URL,
       photoUrl: currentUser.photoURL || '/images/profile_placeholder.png'
     }).then(function(data) {
+
       // Upload the image to Firebase Storage.
       this.storage.ref(currentUser.uid + '/' + Date.now() + '/' + file.name)
           .put(file, {contentType: file.type})
@@ -148,8 +149,8 @@ FriendlyChat.prototype.saveImageMessage = function(event) {
             var filePath = snapshot.metadata.fullPath;
             data.update({imageUrl: this.storage.ref(filePath).toString()});
           }.bind(this)).catch(function(error) {
-            console.error('There was an error uploading a file to Firebase Storage:', error);
-          });
+        console.error('There was an error uploading a file to Firebase Storage:', error);
+      });
     }.bind(this));
   }
 };
@@ -157,23 +158,25 @@ FriendlyChat.prototype.saveImageMessage = function(event) {
 // Signs-in Friendly Chat.
 FriendlyChat.prototype.signIn = function() {
   // Sign in Firebase using popup auth and Google as the identity provider.
-  var provider = new firebase.auth.GitHubAuthProvider();
-  firebase.auth().signInWithPopup(provider).then(function(result) {
-  // This gives you a GitHub Access Token. You can use it to access the GitHub API.
-  var token = result.credential.accessToken;
-  // The signed-in user info.
-  var user = result.user;
-  // ...
-}).catch(function(error) {
-  // Handle Errors here.
-  var errorCode = error.code;
-  var errorMessage = error.message;
-  // The email of the user's account used.
-  var email = error.email;
-  // The firebase.auth.AuthCredential type that was used.
-  var credential = error.credential;
-  // ...
-});
+  //var provider = new firebase.auth.GoogleAuthProvider(); //#Google
+	var provider = new firebase.auth.GithubAuthProvider();
+	firebase.auth().signInWithPopup(provider).then(function(result) {
+		// This gives you a GitHub Access Token. You can use it to access the GitHub API.
+		var token = result.credential.accessToken;
+		// The signed-in user info.
+		var user = result.user;
+		// ...
+	}).catch(function(error) {
+		// Handle Errors here.
+		var errorCode = error.code;
+		var errorMessage = error.message;
+		// The email of the user's account used.
+		var email = error.email;
+		// The firebase.auth.AuthCredential type that was used.
+		var credential = error.credential;
+		// ...
+	});
+  //this.auth.signInWithPopup(provider); #Google
 };
 // Signs-out of Friendly Chat.
 FriendlyChat.prototype.signOut = function() {
@@ -185,11 +188,11 @@ FriendlyChat.prototype.signOut = function() {
 FriendlyChat.prototype.onAuthStateChanged = function(user) {
   if (user) { // User is signed in!
     // Get profile pic and user's name from the Firebase user object.
-    var profilePicUrl = user.photoURL;
-    var userName = user.displayName;
+    var profilePicUrl = user.photoURL; // Only change these two lines!
+    var userName = user.email;   // Only change these two lines!
 
     // Set the user's profile pic and name.
-    this.userPic.style.backgroundImage = 'url(' + (profilePicUrl || '/images/profile_placeholder.png') + ')';
+    this.userPic.style.backgroundImage = 'url(' + profilePicUrl + ')';
     this.userName.textContent = userName;
 
     // Show user's profile and sign-out button.
@@ -219,7 +222,6 @@ FriendlyChat.prototype.checkSignedInWithMessage = function() {
   if (this.auth.currentUser) {
     return true;
   }
-
   // Display a message to the user using a Toast.
   var data = {
     message: 'You must sign-in first',
@@ -275,7 +277,7 @@ FriendlyChat.prototype.displayMessage = function(key, name, text, picUrl, imageU
     messageElement.innerHTML = '';
     messageElement.appendChild(image);
   }
-  // Show the card fading-in and scroll to view the new message.
+  // Show the card fading-in.
   setTimeout(function() {div.classList.add('visible')}, 1);
   this.messageList.scrollTop = this.messageList.scrollHeight;
   this.messageInput.focus();
